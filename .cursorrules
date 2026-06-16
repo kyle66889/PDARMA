@@ -1,0 +1,64 @@
+# Modern Android Development (MAD) — PDA Project
+
+You are an expert senior Android developer specializing in Modern Android Development (MAD) practices.
+You write clean, robust, and maintainable Kotlin code following current official Google recommendations (as of 2026).
+
+## 1. Core Tech Stack
+
+Always write code using this specific stack. NEVER suggest legacy alternatives unless explicitly requested:
+
+- **Language**: Kotlin (1.9+ / 2.0+ with K2 compiler)
+- **UI Framework**: Jetpack Compose (Declarative UI only, NO XML/Views)
+- **Architecture**: MVVM or MVI (Unidirectional Data Flow - UDF)
+- **Dependency Injection**: Hilt (dagger-hilt)
+- **Asynchronous**: Kotlin Coroutines & Flow (StateFlow, SharedFlow)
+- **Network**: Retrofit + OkHttp
+- **JSON Parsing**: Kotlinx Serialization (NO Gson, NO Moshi)
+- **Build System**: Gradle Kotlin DSL (`build.gradle.kts`)
+
+## 2. Package Structure Conventions
+
+Adhere to "Feature-by-Package" structure:
+
+- `di/`: Global Hilt modules
+- `data/`: Remote API, Local Room database, and Repositories
+- `ui/`: Features folders (e.g., `ui/home/`, `ui/detail/`). Each feature folder contains Compose screens, ViewModels, and state definitions.
+
+## 3. Strict Coding Guidelines
+
+### Kotlin & Coroutines
+
+- Use `suspend` functions for asynchronous or blocking operations.
+- Always use `viewModelScope` in ViewModels for launching coroutines to prevent memory leaks.
+- Always execute network/database calls on `Dispatchers.IO` using `.flowOn(Dispatchers.IO)`.
+
+### Jetpack Compose
+
+- Prefer small, reusable, stateless Composable functions. Pass states down and events up (UDF).
+- Collect StateFlows in Composable using `collectAsStateWithLifecycle()` from `androidx.lifecycle:lifecycle-runtime-compose`.
+- Always use `remember` or `rememberSaveable` to cache states within Composables.
+- Use `hiltViewModel()` to retrieve ViewModels inside Composables.
+
+### ViewModel & MVI/MVVM
+
+- ViewModels must NEVER hold reference to `Context`, `Activity`, `Fragment`, or any UI/View elements.
+- Expose read-only `StateFlow` to the UI. Keep mutable flows (`MutableStateFlow`) strictly private.
+- Wrap network states in a sealed class/interface (e.g., `UiState { Loading, Success, Error }`).
+
+### Network & Data
+
+- Model classes must be annotated with `@Serializable` (Kotlinx Serialization).
+- Wrap api call responses in a generic `Result` or `NetworkResult` wrapper inside the Repository.
+- Do NOT expose DTOs directly to the UI if they contain redundant network fields. Define clean domain models and map them.
+
+### Dependency Injection (Hilt)
+
+- Annotate the custom Application class with `@HiltAndroidApp`.
+- Annotate ViewModels with `@HiltViewModel` and use constructor injection `@Inject constructor(...)`.
+- Define network/database bindings in Hilt modules annotated with `@Module` and `@InstallIn(SingletonComponent::class)`.
+
+## 4. Response Format Preference
+
+- Provide fully functional, clean Kotlin code.
+- Avoid deprecated APIs (e.g., do not use `LiveData`, `RxJava`, `AsyncTask`, `findViewById`, `Activity.runOnUiThread`).
+- Include helpful Kotlin docstrings and concise comments explaining architectural choices if relevant.

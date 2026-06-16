@@ -1,0 +1,41 @@
+---
+description: PDA 项目常用 Cursor Prompt 模板与开发技巧
+alwaysApply: false
+---
+
+# PDA — Cursor Prompt Templates
+
+## New Feature (Screen + ViewModel + State)
+
+```
+帮我创建一个名为 {FeatureName} 的全新业务模块。
+
+在 data/ 下定义 {Feature}Dto（Kotlinx Serialization）和 {Feature}Repository。
+在 ui/{feature}/ 下创建 {Feature}ViewModel（Hilt 注入 Repository，StateFlow + MVI/MVVM，{Feature}UiState 含 Loading/Success/Error）。
+在 ui/{feature}/ 下编写 {Feature}Screen（collectAsStateWithLifecycle 订阅状态，渲染 UI 与重试按钮）。
+```
+
+## New API Endpoint
+
+```
+接入 API：{METHOD} {path}
+
+参考 @ApiService.kt 添加 suspend 函数与 DTO。
+在 @ProductRepository.kt 同级创建/修改 {Name}Repository（Hilt 注入 ApiService）。
+用 flow { } + Dispatchers.IO + NetworkResult 包裹，参考 @ProductRepository.kt。
+```
+
+## Refactor Legacy Code
+
+```
+用现代 Android 架构（MAD）重构选中代码：
+- Callback → suspend 函数
+- 订阅 → Kotlin Flow
+- 移除 Context 强引用，保证生命周期安全
+```
+
+## Tips
+
+- 用 `@Files` / `@Folders` 引用现有代码，保持项目一致性。
+- 编译报错时粘贴 Build/Logcat 输出，结合 `@build.gradle.kts` 分析。
+- 查询最新 API 时在问题中加 `@Web`。

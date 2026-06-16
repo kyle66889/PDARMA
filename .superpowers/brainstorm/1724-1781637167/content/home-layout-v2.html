@@ -1,0 +1,65 @@
+<h2>登录后主界面 — 两种布局</h2>
+<p class="subtitle">登出图标已换成"门+箭头"退出图标（即 Material <code>Logout</code> 图标）。选择你想要的布局 A 或 B</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#eef2f7;padding:0;">
+      <div style="width:230px;margin:14px auto;border-radius:22px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.15);background:#f5f7fa;font-family:system-ui;">
+        <div style="height:52px;background:#1565c0;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;">
+          <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">📦</span><span style="font-size:13px;font-weight:600;">FBD RMA</span></div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:12px;"><span>👤 张伟</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+          </div>
+        </div>
+        <div style="margin:14px 12px;background:#fff;border-radius:12px;padding:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+          <div style="font-size:10px;color:#8a909a;margin-bottom:6px;">当前仓库</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:14px;font-weight:600;color:#1f2733;">WH01 · 深圳总仓</span>
+            <span style="color:#1565c0;font-size:16px;">▾</span>
+          </div>
+        </div>
+        <div style="margin:18px 12px;">
+          <div style="height:64px;border-radius:14px;background:#1565c0;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 12px rgba(21,101,192,.3);">
+            <span style="font-size:22px;">📥</span><span style="font-size:14px;font-weight:600;">Dock Receive</span>
+          </div>
+          <div style="height:64px;border-radius:14px;background:#e4e8ee;color:#aeb4bd;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;margin-top:12px;border:1.5px dashed #cfd5dd;">
+            <span style="font-size:20px;">＋</span><span style="font-size:11px;">更多功能（预留）</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · 仓库卡片在顶部</h3>
+      <p>顶栏只放姓名+登出；下方独立"当前仓库"卡片点击弹出列表切换。仓库信息醒目，按钮区留白大。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#eef2f7;padding:0;">
+      <div style="width:230px;margin:14px auto;border-radius:22px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.15);background:#f5f7fa;font-family:system-ui;">
+        <div style="height:52px;background:#1565c0;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 14px;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;">WH01 · 深圳总仓 <span style="font-size:12px;">▾</span></div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+        </div>
+        <div style="margin:14px 12px 4px;display:flex;align-items:center;gap:8px;color:#5b6470;font-size:13px;">
+          <span style="width:30px;height:30px;border-radius:50%;background:#1565c0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;">张</span>
+          <span>你好，<b style="color:#1f2733;">张伟</b></span>
+        </div>
+        <div style="margin:14px 12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="height:92px;border-radius:14px;background:#1565c0;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 12px rgba(21,101,192,.3);">
+            <span style="font-size:26px;">📥</span><span style="font-size:13px;font-weight:600;">Dock Receive</span>
+          </div>
+          <div style="height:92px;border-radius:14px;background:#e4e8ee;color:#aeb4bd;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1.5px dashed #cfd5dd;">
+            <span style="font-size:22px;">＋</span><span style="font-size:11px;">预留</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · 仓库切换在顶栏 + 功能磁贴</h3>
+      <p>顶栏直接放仓库下拉+登出；下方"你好，张伟"问候；功能用 2 列磁贴，方便以后扩展更多入口。</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:18px;">点登出图标会弹确认框「确定退出登录？」，确认后清除本地会话并回到登录页。</p>

@@ -1,0 +1,68 @@
+---
+description: PDA 项目现代 Android 开发技术栈与架构规范 (Kotlin + Compose + MVVM/MVI + Hilt)
+alwaysApply: true
+---
+
+# PDA — Modern Android Development (MAD)
+
+You are an expert senior Android developer for the **PDA** handheld device project.
+Write clean, robust Kotlin following official Google recommendations (as of 2026).
+
+## Core Tech Stack
+
+Always use this stack. NEVER suggest legacy alternatives unless explicitly requested:
+
+- **Language**: Kotlin (1.9+ / 2.0+ with K2 compiler)
+- **UI**: Jetpack Compose only — NO XML/Views
+- **Architecture**: MVVM or MVI (Unidirectional Data Flow)
+- **DI**: Hilt (dagger-hilt)
+- **Async**: Kotlin Coroutines & Flow (`StateFlow`, `SharedFlow`) — NO RxJava, NO LiveData
+- **Network**: Retrofit + OkHttp
+- **JSON**: Kotlinx Serialization — NO Gson, NO Moshi
+- **Build**: Gradle Kotlin DSL (`build.gradle.kts`)
+
+## Package Structure (Feature-by-Package)
+
+```
+di/           # Global Hilt modules
+data/         # Remote API, Room DB, Repositories
+ui/           # Feature folders: ui/home/, ui/detail/, etc.
+              # Each feature: Compose screens, ViewModels, state definitions
+```
+
+## Kotlin & Coroutines
+
+- Use `suspend` for async/blocking operations.
+- Launch coroutines in ViewModels via `viewModelScope` only.
+- Run network/DB work on `Dispatchers.IO` with `.flowOn(Dispatchers.IO)`.
+
+## Jetpack Compose
+
+- Small, reusable, stateless Composables; state down, events up (UDF).
+- Collect flows with `collectAsStateWithLifecycle()` from `lifecycle-runtime-compose`.
+- Cache local UI state with `remember` or `rememberSaveable`.
+- Obtain ViewModels via `hiltViewModel()`.
+
+## ViewModel & MVI/MVVM
+
+- ViewModels MUST NOT hold `Context`, `Activity`, `Fragment`, or View references.
+- Expose read-only `StateFlow` to UI; keep `MutableStateFlow` private.
+- Wrap async states in a sealed class, e.g. `UiState { Loading, Success, Error }`.
+
+## Network & Data
+
+- Annotate models with `@Serializable` (Kotlinx Serialization).
+- Wrap API responses in `Result` or `NetworkResult` inside Repositories.
+- Map DTOs to domain models — do not expose raw DTOs to UI.
+
+## Hilt
+
+- `@HiltAndroidApp` on Application class.
+- `@HiltViewModel` + `@Inject constructor(...)` on ViewModels.
+- Network/DB bindings in `@Module` + `@InstallIn(SingletonComponent::class)`.
+
+## Response Format
+
+- Provide fully functional Kotlin code.
+- Avoid deprecated APIs: `LiveData`, `RxJava`, `AsyncTask`, `findViewById`, `runOnUiThread`.
+- Add KDoc only where architectural choices are non-obvious.

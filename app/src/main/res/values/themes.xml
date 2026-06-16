@@ -1,0 +1,4 @@
+<resources>
+    <!-- Base application theme — Compose handles actual theming; this just suppresses the ActionBar. -->
+    <style name="Theme.PDA" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
