@@ -42,6 +42,12 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
 
 // Must be at top level — tasks.withType inside android{} block is ignored by the AGP DSL

@@ -4,31 +4,38 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,46 +52,81 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (token: String) -> Unit,
+    onLoginSuccess: () -> Unit,
     viewModel: LoginViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val prefill by viewModel.prefill.collectAsStateWithLifecycle()
 
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var rememberCredentials by rememberSaveable { mutableStateOf(true) }
+    var prefilled by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     val isLoading = uiState is LoginUiState.Loading
 
+    // 一次性应用 DataStore 预填
+    LaunchedEffect(prefill) {
+        val p = prefill
+        if (p != null && !prefilled) {
+            username = p.username
+            password = p.password
+            rememberCredentials = p.rememberCredentials
+            prefilled = true
+        }
+    }
+
     LaunchedEffect(uiState) {
-        if (uiState is LoginUiState.Success) {
-            onLoginSuccess((uiState as LoginUiState.Success).token)
+        if (uiState is LoginUiState.Success) onLoginSuccess()
+    }
+
+    fun submit() {
+        focusManager.clearFocus()
+        if (username.isNotBlank() && password.isNotBlank()) {
+            viewModel.login(username, password, rememberCredentials)
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 40.dp),
+            .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // App header
+        // 居中 Logo（设计 B）
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(64.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.Inventory2,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(34.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         Text(
-            text = "FBDRMA",
-            style = MaterialTheme.typography.displayMedium,
+            text = "FBD RMA",
+            style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
         Text(
             text = "仓库管理系统",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
-        // Username field
         OutlinedTextField(
             value = username,
             onValueChange = {
@@ -96,6 +138,7 @@ fun LoginScreen(
             singleLine = true,
             enabled = !isLoading,
             isError = uiState is LoginUiState.Error,
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(
@@ -103,9 +146,8 @@ fun LoginScreen(
             )
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Password field
         OutlinedTextField(
             value = password,
             onValueChange = {
@@ -126,22 +168,31 @@ fun LoginScreen(
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             enabled = !isLoading,
             isError = uiState is LoginUiState.Error,
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done
             ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    focusManager.clearFocus()
-                    if (username.isNotBlank() && password.isNotBlank()) {
-                        viewModel.login(username, password)
-                    }
-                }
-            )
+            keyboardActions = KeyboardActions(onDone = { submit() })
         )
 
-        // Error message
+        // 记住账号密码复选框（缺省勾选）
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = rememberCredentials,
+                onCheckedChange = { rememberCredentials = it },
+                enabled = !isLoading
+            )
+            Text(
+                text = "记住账号密码",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
         AnimatedVisibility(
             visible = uiState is LoginUiState.Error,
             enter = fadeIn(),
@@ -151,18 +202,18 @@ fun LoginScreen(
                 text = (uiState as? LoginUiState.Error)?.message ?: "",
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Login button
         Button(
-            onClick = { viewModel.login(username, password) },
+            onClick = { submit() },
+            shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(52.dp),
             enabled = username.isNotBlank() && password.isNotBlank() && !isLoading
         ) {
             if (isLoading) {
@@ -172,10 +223,7 @@ fun LoginScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text(
-                    text = "登 录",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Text(text = "登 录", style = MaterialTheme.typography.titleMedium)
             }
         }
     }
