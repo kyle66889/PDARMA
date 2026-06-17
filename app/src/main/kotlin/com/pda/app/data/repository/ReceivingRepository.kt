@@ -24,7 +24,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ReceivingRepository @Inject constructor(
+open class ReceivingRepository @Inject constructor(
     private val api: ReceivingApiService
 ) {
     companion object {
@@ -32,7 +32,7 @@ class ReceivingRepository @Inject constructor(
         private const val NETWORK_FAIL = "网络连接失败，请检查网络设置"
     }
 
-    fun createBatch(warehouseId: Int): Flow<NetworkResult<BatchInfo>> = flow {
+    open fun createBatch(warehouseId: Int): Flow<NetworkResult<BatchInfo>> = flow {
         emit(NetworkResult.Loading)
         try {
             val resp = api.createBatch(CreateBatchRequest(warehouseId))
@@ -48,7 +48,7 @@ class ReceivingRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun uploadPhoto(bytes: ByteArray, filename: String): Flow<NetworkResult<String>> = flow {
+    open fun uploadPhoto(bytes: ByteArray, filename: String): Flow<NetworkResult<String>> = flow {
         emit(NetworkResult.Loading)
         try {
             val body = bytes.toRequestBody("image/jpeg".toMediaType())
@@ -67,7 +67,7 @@ class ReceivingRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun analyzeShipping(base64: String): Flow<NetworkResult<ShippingAnalysis>> = flow {
+    open fun analyzeShipping(base64: String): Flow<NetworkResult<ShippingAnalysis>> = flow {
         emit(NetworkResult.Loading)
         try {
             val resp = api.analyze(AnalyzeRequest(mode = "shipping", photos = listOf(base64)))
@@ -83,7 +83,7 @@ class ReceivingRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun createItem(req: CreateItemRequest): Flow<NetworkResult<Int>> = flow {
+    open fun createItem(req: CreateItemRequest): Flow<NetworkResult<Int>> = flow {
         emit(NetworkResult.Loading)
         try {
             val resp = api.createItem(req)
@@ -98,7 +98,7 @@ class ReceivingRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun getItems(batchId: Int): Flow<NetworkResult<List<ReceivingItemUi>>> = flow {
+    open fun getItems(batchId: Int): Flow<NetworkResult<List<ReceivingItemUi>>> = flow {
         emit(NetworkResult.Loading)
         try {
             val resp = api.getItems(batchId)
@@ -121,7 +121,7 @@ class ReceivingRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun closeBatch(batchId: Int): Flow<NetworkResult<Unit>> = flow {
+    open fun closeBatch(batchId: Int): Flow<NetworkResult<Unit>> = flow {
         emit(NetworkResult.Loading)
         try {
             val resp = api.closeBatch(batchId)
