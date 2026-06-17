@@ -21,7 +21,7 @@ data class CreateItemRequest(
     val trackingNumber: String? = null,
     val carrier: String? = null,
     val condition: String? = null,
-    val photoPath: String,
+    val photoPath: String? = null,
     val source: String = "AI",
     val rawJson: String? = null,
     val needsReview: Boolean? = null

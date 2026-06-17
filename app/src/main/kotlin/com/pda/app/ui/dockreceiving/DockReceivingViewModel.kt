@@ -33,7 +33,7 @@ class DockReceivingViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DockReceivingUiState())
     val uiState: StateFlow<DockReceivingUiState> = _uiState.asStateFlow()
 
-    fun startBatch() {
+    fun startBatch(method: InputMethod = InputMethod.Picture) {
         val wid = warehouseId
         if (wid == null) {
             _uiState.update { it.copy(message = "Select a warehouse first") }
@@ -47,6 +47,7 @@ class DockReceivingViewModel @Inject constructor(
                         it.copy(
                             isBusy = false,
                             phase = Phase.Recording,
+                            inputMethod = method,
                             batchId = result.data.batchId,
                             batchNumber = result.data.batchNumber,
                             items = emptyList()
@@ -169,6 +170,32 @@ class DockReceivingViewModel @Inject constructor(
                     is NetworkResult.Error -> _uiState.update {
                         it.copy(confirm = it.confirm?.copy(saving = false), message = result.message)
                     }
+                }
+            }
+        }
+    }
+
+    /** 扫码模式：直接用运单号建条目（无照片，source=Barcode），成功后刷新列表。 */
+    fun scanItem(tracking: String) {
+        val t = tracking.trim()
+        if (t.isBlank()) return
+        val bid = _uiState.value.batchId ?: return
+        val req = CreateItemRequest(
+            receivingBatchId = bid,
+            trackingNumber = t,
+            photoPath = null,
+            source = "Barcode",
+            needsReview = false
+        )
+        viewModelScope.launch {
+            repo.createItem(req).collect { result ->
+                when (result) {
+                    is NetworkResult.Loading -> {}
+                    is NetworkResult.Success -> {
+                        _uiState.update { it.copy(recentlySaved = true) }
+                        refreshItems(bid)
+                    }
+                    is NetworkResult.Error -> _uiState.update { it.copy(message = result.message) }
                 }
             }
         }

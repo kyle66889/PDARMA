@@ -33,6 +33,7 @@ data class ConfirmState(
 
 data class DockReceivingUiState(
     val phase: Phase = Phase.Idle,
+    val inputMethod: InputMethod = InputMethod.Picture,
     val batchId: Int? = null,
     val batchNumber: String? = null,
     val items: List<ReceivingItemUi> = emptyList(),

@@ -15,8 +15,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -25,9 +29,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -70,11 +78,17 @@ fun DockReceivingScreen(
         },
         bottomBar = {
             if (uiState.phase == Phase.Recording) {
-                RecordingBottomBar(
-                    state = uiState,
-                    onConfirm = viewModel::saveItem,
-                    onCloseBatch = viewModel::requestCloseBatch
-                )
+                when (uiState.inputMethod) {
+                    InputMethod.Picture -> RecordingBottomBar(
+                        state = uiState,
+                        onConfirm = viewModel::saveItem,
+                        onCloseBatch = viewModel::requestCloseBatch
+                    )
+                    InputMethod.BarcodeScan -> ScanBottomBar(
+                        busy = uiState.isBusy,
+                        onCloseBatch = viewModel::requestCloseBatch
+                    )
+                }
             }
         }
     ) { padding ->
@@ -82,21 +96,21 @@ fun DockReceivingScreen(
             when (uiState.phase) {
                 Phase.Idle -> IdleContent(
                     busy = uiState.isBusy,
-                    onStart = { method ->
-                        when (method) {
-                            InputMethod.Picture -> viewModel.startBatch()
-                            InputMethod.BarcodeScan ->
-                                scope.launch { snackbarHostState.showSnackbar("条码扫描开发中") }
-                        }
-                    }
+                    onStart = { method -> viewModel.startBatch(method) }
                 )
-                Phase.Recording -> RecordingContent(
-                    state = uiState,
-                    onPhotoCaptured = viewModel::onPhotoCaptured,
-                    onTrackingChange = viewModel::onTrackingChanged,
-                    onCarrierChange = viewModel::onCarrierChanged,
-                    onConditionChange = viewModel::onConditionChanged
-                )
+                Phase.Recording -> when (uiState.inputMethod) {
+                    InputMethod.Picture -> RecordingContent(
+                        state = uiState,
+                        onPhotoCaptured = viewModel::onPhotoCaptured,
+                        onTrackingChange = viewModel::onTrackingChanged,
+                        onCarrierChange = viewModel::onCarrierChanged,
+                        onConditionChange = viewModel::onConditionChanged
+                    )
+                    InputMethod.BarcodeScan -> ScanContent(
+                        state = uiState,
+                        onScan = viewModel::scanItem
+                    )
+                }
             }
 
             if (uiState.showCloseDialog) {
@@ -221,6 +235,95 @@ private fun RecordingBottomBar(
                     CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                 else Text("Confirm", maxLines = 1)
             }
+        }
+    }
+}
+
+/** 扫码模式录入页：无相机预览；顶部运单号输入框（扫码/输入回车自动建条目），下方滚动显示最近扫描。 */
+@Composable
+private fun ScanContent(
+    state: DockReceivingUiState,
+    onScan: (String) -> Unit
+) {
+    var text by rememberSaveable { mutableStateOf("") }
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        RecordingStatusBar(state)
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            label = { Text("运单号（扫码 / 输入后回车）") },
+            placeholder = { Text("扫码或输入运单号…") },
+            singleLine = true,
+            textStyle = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    val t = text.trim()
+                    if (t.isNotEmpty()) {
+                        onScan(t)
+                        text = ""
+                    }
+                    focusRequester.requestFocus()
+                }
+            )
+        )
+
+        Spacer(Modifier.height(12.dp))
+        Text("已录条目 (${state.itemCount})", fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(4.dp))
+        // 最新的在最上面。
+        LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            items(state.items.asReversed(), key = { it.receivingItemId }) { item ->
+                ScanItemRow(item)
+                HorizontalDivider()
+            }
+        }
+    }
+}
+
+/** 扫码列表行，格式参考 Receive Report：运单号 + 承运商/需复核。 */
+@Composable
+private fun ScanItemRow(item: ReceivingItemUi) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            item.trackingNo.ifBlank { "(no tracking #)" },
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        if (item.needsReview) {
+            Icon(Icons.Default.Warning, contentDescription = "Needs review", tint = MaterialTheme.colorScheme.error)
+        } else if (item.carrier.isNotBlank()) {
+            Text(
+                item.carrier,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/** 扫码模式底栏：只有 Close Batch（条目扫码即自动保存，无需 Confirm）。 */
+@Composable
+private fun ScanBottomBar(busy: Boolean, onCloseBatch: () -> Unit) {
+    Surface(tonalElevation = 3.dp) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+            OutlinedButton(
+                onClick = onCloseBatch,
+                enabled = !busy,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) { Text("Close Batch", maxLines = 1) }
         }
     }
 }
