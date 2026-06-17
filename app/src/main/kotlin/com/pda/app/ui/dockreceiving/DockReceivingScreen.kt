@@ -9,19 +9,23 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.view.CameraController
+import android.text.InputType
+import android.view.GestureDetector
+import android.view.MotionEvent
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
@@ -30,16 +34,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -89,7 +88,6 @@ fun DockReceivingScreen(
                         onCloseBatch = viewModel::requestCloseBatch
                     )
                     InputMethod.BarcodeScan -> ScanBottomBar(
-                        busy = uiState.isBusy,
                         onCloseBatch = viewModel::requestCloseBatch
                     )
                 }
@@ -258,50 +256,11 @@ private fun ScanContent(
     state: DockReceivingUiState,
     onScan: (String) -> Unit
 ) {
-    var text by rememberSaveable { mutableStateOf("") }
-    val focusRequester = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
-    // 进入时聚焦（接收扫码枪），并隐藏软键盘。
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-        keyboard?.hide()
-    }
-
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         RecordingStatusBar(state)
         Spacer(Modifier.height(8.dp))
 
-        OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
-            label = { Text("Tracking # (scan / type + Enter)") },
-            placeholder = { Text("Scan or enter tracking #…") },
-            singleLine = true,
-            textStyle = MaterialTheme.typography.titleMedium,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                // 保持焦点但默认隐藏软键盘；单击不弹出，双击才弹出。
-                .onFocusChanged { if (it.isFocused) keyboard?.hide() }
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { /* 吞掉单击，避免弹出软键盘 */ },
-                        onDoubleTap = { keyboard?.show() }
-                    )
-                },
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    val t = text.trim()
-                    if (t.isNotEmpty()) {
-                        onScan(t)
-                        text = ""
-                    }
-                    focusRequester.requestFocus()
-                    keyboard?.hide()
-                }
-            )
-        )
+        ScanInputField(onScan = onScan)
 
         Spacer(Modifier.height(12.dp))
         Text("Recorded (${state.itemCount})", fontWeight = FontWeight.SemiBold)
@@ -312,6 +271,69 @@ private fun ScanContent(
                 ScanItemRow(item)
                 HorizontalDivider()
             }
+        }
+    }
+}
+
+/**
+ * 原生 EditText 扫码输入框：聚焦以接收扫码枪硬件输入，但 showSoftInputOnFocus=false 使其
+ * **进入/单击都不弹软键盘**；**双击**才显式调出软键盘供手动输入。回车（含扫码枪 Enter）提交。
+ */
+@Composable
+private fun ScanInputField(onScan: (String) -> Unit) {
+    val context = LocalContext.current
+    val imm = remember { context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            "Tracking # (scan / type, double-tap for keyboard)",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.height(4.dp))
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            color = Color.Transparent,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                factory = { ctx ->
+                    EditText(ctx).apply {
+                        hint = "Scan or enter tracking #…"
+                        isSingleLine = true
+                        background = null
+                        textSize = 18f
+                        imeOptions = EditorInfo.IME_ACTION_DONE
+                        inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                        // 关键：聚焦不弹软键盘（扫码枪走硬件按键），只有双击才显式调出。
+                        showSoftInputOnFocus = false
+                        setOnEditorActionListener { v, actionId, _ ->
+                            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                                val t = v.text.toString().trim()
+                                if (t.isNotEmpty()) {
+                                    onScan(t)
+                                    (v as EditText).setText("")
+                                }
+                                showSoftInputOnFocus = false
+                                imm.hideSoftInputFromWindow(v.windowToken, 0)
+                                true
+                            } else false
+                        }
+                        val gesture = GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
+                            override fun onDoubleTap(e: MotionEvent): Boolean {
+                                showSoftInputOnFocus = true
+                                requestFocus()
+                                imm.showSoftInput(this@apply, InputMethodManager.SHOW_IMPLICIT)
+                                return true
+                            }
+                        })
+                        setOnTouchListener { _, ev -> gesture.onTouchEvent(ev); false }
+                        post { requestFocus() }
+                    }
+                }
+            )
         }
     }
 }
@@ -342,14 +364,13 @@ private fun ScanItemRow(item: ReceivingItemUi) {
     }
 }
 
-/** 扫码模式底栏：只有 Close Batch（条目扫码即自动保存，无需 Confirm）。 */
+/** 扫码模式底栏：只有 Close Batch（条目扫码即自动保存，无需 Confirm）。此处始终可点。 */
 @Composable
-private fun ScanBottomBar(busy: Boolean, onCloseBatch: () -> Unit) {
+private fun ScanBottomBar(onCloseBatch: () -> Unit) {
     Surface(tonalElevation = 3.dp) {
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
             OutlinedButton(
                 onClick = onCloseBatch,
-                enabled = !busy,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) { Text("Close Batch", maxLines = 1) }
