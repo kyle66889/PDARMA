@@ -1,5 +1,6 @@
 package com.pda.app.ui.home
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,10 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.MoveToInbox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,10 +29,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +54,7 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     onLogout: () -> Unit,
     onNavigateToDockReceiving: (Int) -> Unit,
+    onNavigateToReceiveReport: (Int) -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,33 +66,41 @@ fun HomeScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                title = {
-                    // 顶栏内的仓库切换器
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.height(40.dp)
+                        TextButton(
+                            onClick = { menuExpanded = true },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.height(36.dp)
                         ) {
-                            TextButton(onClick = { menuExpanded = true }) {
-                                Text(
-                                    text = uiState.selectedWarehouse?.let { "${it.warehouseCode} · ${it.warehouseName}" }
-                                        ?: "选择仓库",
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Icon(
-                                    Icons.Default.ArrowDropDown,
-                                    contentDescription = "切换仓库",
-                                    tint = MaterialTheme.colorScheme.onPrimary
-                                )
-                            }
+                            Text(
+                                text = uiState.selectedWarehouse?.let { "${it.warehouseCode} · ${it.warehouseName}" }
+                                    ?: "选择仓库",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Icon(
+                                Icons.Default.ArrowDropDown,
+                                contentDescription = "切换仓库",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
+
                         val state = uiState.warehouseState
                         if (state is WarehouseState.Success) {
                             DropdownMenu(
@@ -107,19 +119,35 @@ fun HomeScreen(
                             }
                         }
                     }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        viewModel.logout()
-                        onLogout()
-                    }) {
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "你好，${uiState.userFullName}",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    IconButton(
+                        onClick = {
+                            viewModel.logout()
+                            onLogout()
+                        },
+                        modifier = Modifier.size(40.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Logout,
-                            contentDescription = "退出登录"
+                            contentDescription = "退出登录",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
-            )
+            }
         }
     ) { innerPadding ->
         Column(
@@ -128,13 +156,6 @@ fun HomeScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            Text(
-                text = "你好，${uiState.userFullName}",
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             when (val state = uiState.warehouseState) {
                 is WarehouseState.Loading -> {
                     Box(modifier = Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
@@ -175,9 +196,17 @@ fun HomeScreen(
                         onNavigateToDockReceiving(wh.id)
                     }
                 }
-                Card(modifier = Modifier.weight(1f).height(100.dp)) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("预留", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                ActionTile(
+                    label = "Receive Report",
+                    icon = Icons.Default.Assessment,
+                    enabled = uiState.selectedWarehouse != null,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    val wh = uiState.selectedWarehouse
+                    if (wh == null) {
+                        scope.launch { snackbarHostState.showSnackbar("请先选择仓库") }
+                    } else {
+                        onNavigateToReceiveReport(wh.id)
                     }
                 }
             }

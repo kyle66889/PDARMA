@@ -36,7 +36,7 @@ class DockReceivingViewModel @Inject constructor(
     fun startBatch() {
         val wid = warehouseId
         if (wid == null) {
-            _uiState.update { it.copy(message = "请先选择仓库") }
+            _uiState.update { it.copy(message = "Select a warehouse first") }
             return
         }
         viewModelScope.launch {
@@ -61,8 +61,11 @@ class DockReceivingViewModel @Inject constructor(
     }
 
     fun onPhotoCaptured(file: File) {
+        // Inline confirm fields (no separate page). Retaking replaces the pending capture,
+        // so delete the previous temp photo first to avoid leaking cache files.
+        _uiState.value.confirm?.photoFile?.delete()
         _uiState.update {
-            it.copy(phase = Phase.Confirming, confirm = ConfirmState(photoFile = file))
+            it.copy(confirm = ConfirmState(photoFile = file), recentlySaved = false)
         }
         viewModelScope.launch {
             val img = try {
@@ -71,7 +74,7 @@ class DockReceivingViewModel @Inject constructor(
                 Log.e(TAG, "compress: ${e.message}", e)
                 _uiState.update {
                     it.copy(confirm = it.confirm?.copy(uploading = false, analyzing = false, uploadFailed = true),
-                        message = "照片处理失败，请重拍")
+                        message = "Photo processing failed — retake")
                 }
                 return@launch
             }
@@ -131,7 +134,7 @@ class DockReceivingViewModel @Inject constructor(
 
     fun cancelConfirm() {
         _uiState.value.confirm?.photoFile?.delete()
-        _uiState.update { it.copy(phase = Phase.Recording, confirm = null) }
+        _uiState.update { it.copy(confirm = null) }
     }
 
     fun saveItem() {
@@ -157,7 +160,8 @@ class DockReceivingViewModel @Inject constructor(
                     is NetworkResult.Loading -> {}
                     is NetworkResult.Success -> {
                         c.photoFile.delete()
-                        _uiState.update { it.copy(phase = Phase.Recording, confirm = null, message = "已录入") }
+                        // "Saved" 显示在底部信息条（不再用会遮挡预览的 snackbar）。
+                        _uiState.update { it.copy(confirm = null, recentlySaved = true) }
                         refreshItems(bid)
                     }
                     is NetworkResult.Error -> _uiState.update {
@@ -186,7 +190,7 @@ class DockReceivingViewModel @Inject constructor(
                 when (result) {
                     is NetworkResult.Loading -> _uiState.update { it.copy(isBusy = true) }
                     is NetworkResult.Success -> _uiState.update {
-                        DockReceivingUiState(message = "${number ?: "批次"} 已关闭")
+                        DockReceivingUiState(message = "${number ?: "Batch"} closed")
                     }
                     is NetworkResult.Error -> _uiState.update {
                         it.copy(isBusy = false, showCloseDialog = false, message = result.message)
