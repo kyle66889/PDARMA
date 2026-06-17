@@ -15,9 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
@@ -122,13 +120,7 @@ private fun RecordingContent(
     onCarrierChange: (String) -> Unit,
     onConditionChange: (String) -> Unit
 ) {
-    // 整页可滚动：预览固定比例、快门紧跟其下；内容多了就滚动，不挤压、不拉伸预览。
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         // 状态条（件数 + 上传/识别/已保存）放在最上方。
         RecordingStatusBar(state)
         Spacer(Modifier.height(8.dp))
@@ -141,14 +133,16 @@ private fun RecordingContent(
                 onCarrierChange = onCarrierChange,
                 onConditionChange = onConditionChange
             )
-            Spacer(Modifier.height(12.dp))
-        }
-
-        // Recorded items (页面已可滚动，用普通行即可，不再嵌套 LazyColumn)。
-        if (state.items.isNotEmpty()) {
-            state.items.forEach { item -> RecordedItemRow(item) }
             Spacer(Modifier.height(8.dp))
         }
+
+        // Recorded items.
+        if (state.items.isNotEmpty()) {
+            state.items.forEach { item -> RecordedItemRow(item) }
+        }
+
+        // 弹性留白：把相机块顶到底部，紧贴下方按钮（空状态时空白在预览上方而非下方）。
+        Spacer(Modifier.weight(1f))
 
         CameraCapture(
             modifier = Modifier.fillMaxWidth(),
@@ -291,7 +285,7 @@ private fun CameraCapture(
     }
 
     Column(modifier = modifier) {
-        // 预览固定 3:4 竖图，大小恒定（不随上方内容伸缩）；快门紧跟其下。
+        // 预览固定高度，大小恒定（不随上方内容伸缩）；快门紧跟其下。
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
@@ -301,7 +295,7 @@ private fun CameraCapture(
                     this.controller = controller
                 }
             },
-            modifier = Modifier.fillMaxWidth().aspectRatio(3f / 4f)
+            modifier = Modifier.fillMaxWidth().height(320.dp)
         )
         Spacer(Modifier.height(12.dp))
         Box(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), contentAlignment = Alignment.Center) {
