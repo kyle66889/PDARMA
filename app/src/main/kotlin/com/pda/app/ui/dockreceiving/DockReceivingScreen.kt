@@ -323,9 +323,15 @@ private fun ScanInputField(onScan: (String) -> Unit) {
                         }
                         val gesture = GestureDetector(ctx, object : GestureDetector.SimpleOnGestureListener() {
                             override fun onDoubleTap(e: MotionEvent): Boolean {
-                                showSoftInputOnFocus = true
-                                requestFocus()
-                                imm.showSoftInput(this@apply, InputMethodManager.SHOW_IMPLICIT)
+                                // 双击切换软键盘：未显示则调出，已显示则收起。
+                                if (showSoftInputOnFocus) {
+                                    showSoftInputOnFocus = false
+                                    imm.hideSoftInputFromWindow(windowToken, 0)
+                                } else {
+                                    showSoftInputOnFocus = true
+                                    requestFocus()
+                                    imm.showSoftInput(this@apply, InputMethodManager.SHOW_IMPLICIT)
+                                }
                                 return true
                             }
                         })
