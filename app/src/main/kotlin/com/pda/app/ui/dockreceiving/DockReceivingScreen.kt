@@ -134,15 +134,18 @@ private fun RecordingContent(
             Spacer(Modifier.height(12.dp))
         }
 
-        // Recorded items fill the middle; this also pushes the preview down to the
-        // bottom of the screen (even right after starting a new batch, with no items).
-        LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            items(state.items, key = { it.receivingItemId }) { item -> RecordedItemRow(item) }
+        // Recorded items: bounded + scrollable so they never squeeze the camera/shutter below.
+        if (state.items.isNotEmpty()) {
+            LazyColumn(modifier = Modifier.heightIn(max = 160.dp).fillMaxWidth()) {
+                items(state.items, key = { it.receivingItemId }) { item -> RecordedItemRow(item) }
+            }
+            Spacer(Modifier.height(8.dp))
         }
 
-        Spacer(Modifier.height(8.dp))
+        // Camera takes the remaining space; the preview shrinks but the shutter stays a
+        // fixed size at the bottom (see CameraCapture). weight(1f) absorbs any overflow.
         CameraCapture(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             onPhotoCaptured = onPhotoCaptured
         )
     }
@@ -277,6 +280,8 @@ private fun CameraCapture(
     }
 
     Column(modifier = modifier) {
+        // Preview takes the leftover space and shrinks when confirm fields are shown;
+        // the shutter below keeps a fixed size and position regardless.
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
@@ -286,10 +291,10 @@ private fun CameraCapture(
                     this.controller = controller
                 }
             },
-            modifier = Modifier.fillMaxWidth().height(200.dp)
+            modifier = Modifier.fillMaxWidth().weight(1f)
         )
         Spacer(Modifier.height(12.dp))
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), contentAlignment = Alignment.Center) {
             ShutterButton(onClick = { capturePhoto(context, controller, cameraExecutor, onPhotoCaptured) })
         }
     }

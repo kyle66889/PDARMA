@@ -116,7 +116,7 @@ class DockReceivingViewModelTest {
             analyzeFlow = {
                 flowOf(
                     NetworkResult.Loading,
-                    NetworkResult.Success(ShippingAnalysis("1Z999", "fedex", null, "{}"))
+                    NetworkResult.Success(ShippingAnalysis("1Z999AA10123456784", "fedex", null, "{}"))
                 )
             }
         }
@@ -132,7 +132,7 @@ class DockReceivingViewModelTest {
         assertEquals("/p/abc.jpg", c.photoPath)
         assertFalse(c.uploading)
         assertFalse(c.analyzing)
-        assertEquals("1Z999", c.trackingNumber)
+        assertEquals("1Z999AA10123456784", c.trackingNumber)
         assertEquals("FedEx", c.carrier)
         assertTrue(c.trackingAutoFilled)
         assertTrue(c.carrierAutoFilled)
@@ -176,7 +176,7 @@ class DockReceivingViewModelTest {
         assertFalse(vm.uiState.value.confirm!!.canSave)
 
         // 手工输入运单号后 → 可保存
-        vm.onTrackingChanged("1Z999")
+        vm.onTrackingChanged("1Z999AA10123456784")
         assertTrue(vm.uiState.value.confirm!!.canSave)
     }
 
@@ -185,7 +185,7 @@ class DockReceivingViewModelTest {
         val repo = FakeReceivingRepository().apply {
             createBatchFlow = { flowOf(NetworkResult.Success(BatchInfo(42, "B-001"))) }
             uploadFlow = { flowOf(NetworkResult.Loading, NetworkResult.Error("图片上传失败", null)) }
-            analyzeFlow = { flowOf(NetworkResult.Success(ShippingAnalysis("1Z999", null, null, null))) }
+            analyzeFlow = { flowOf(NetworkResult.Success(ShippingAnalysis("1Z999AA10123456784", null, null, null))) }
         }
         val vm = vm(repo)
         vm.startBatch(); advanceUntilIdle()
@@ -230,8 +230,8 @@ class DockReceivingViewModelTest {
         val repo = FakeReceivingRepository().apply {
             createBatchFlow = { flowOf(NetworkResult.Success(BatchInfo(42, "B-001"))) }
             uploadFlow = { flowOf(NetworkResult.Success("/p/abc.jpg")) }
-            analyzeFlow = { flowOf(NetworkResult.Success(ShippingAnalysis("1Z999", "UPS", null, "{}"))) }
-            getItemsFlow = { flowOf(NetworkResult.Success(listOf(ReceivingItemUi(7, "1Z999", "UPS", false)))) }
+            analyzeFlow = { flowOf(NetworkResult.Success(ShippingAnalysis("1Z999AA10123456784", "UPS", null, "{}"))) }
+            getItemsFlow = { flowOf(NetworkResult.Success(listOf(ReceivingItemUi(7, "1Z999AA10123456784", "UPS", false)))) }
         }
         val vm = vm(repo)
         vm.startBatch(); advanceUntilIdle()
@@ -240,7 +240,7 @@ class DockReceivingViewModelTest {
         vm.saveItem(); advanceUntilIdle()
 
         assertEquals(false, repo.lastCreateItemReq!!.needsReview)
-        assertEquals("1Z999", repo.lastCreateItemReq!!.trackingNumber)
+        assertEquals("1Z999AA10123456784", repo.lastCreateItemReq!!.trackingNumber)
     }
 
     @Test
@@ -248,7 +248,7 @@ class DockReceivingViewModelTest {
         val repo = FakeReceivingRepository().apply {
             createBatchFlow = { flowOf(NetworkResult.Success(BatchInfo(42, "B-001"))) }
             uploadFlow = { flowOf(NetworkResult.Success("/p/abc.jpg")) }
-            analyzeFlow = { flowOf(NetworkResult.Success(ShippingAnalysis("1Z999", null, null, null))) }
+            analyzeFlow = { flowOf(NetworkResult.Success(ShippingAnalysis("1Z999AA10123456784", null, null, null))) }
         }
         val vm = vm(repo)
         vm.startBatch(); advanceUntilIdle()

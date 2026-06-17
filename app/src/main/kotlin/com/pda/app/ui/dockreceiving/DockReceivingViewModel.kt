@@ -103,7 +103,9 @@ class DockReceivingViewModel @Inject constructor(
                 is NetworkResult.Loading -> {}
                 is NetworkResult.Success -> _uiState.update { state ->
                     val c = state.confirm ?: return@update state
-                    val tracking = result.data.trackingNumber.orEmpty()
+                    // 校验 AI 返回的运单号；识别失败/返回乱码（N/A、提示语等）时视为空，
+                    // 不写入字段，避免 Confirm 被错误启用。
+                    val tracking = sanitizeTracking(result.data.trackingNumber)
                     val carrier = normalizeCarrier(result.data.carrier)
                     state.copy(
                         confirm = c.copy(
