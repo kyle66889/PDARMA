@@ -206,6 +206,40 @@ private fun BoxScope.ProcessingOverlay(confirm: ConfirmState) {
     }
 }
 
+/**
+ * 识别出运单号后浮在相机预览顶部的 chip：条码来源显示绿点，AI 来源显示主题色点。
+ * 小屏幕下运单号输入框可能被遮住，此 chip 确保结果始终可见。
+ */
+@Composable
+private fun TrackingChipOverlay(tracking: String, fromBarcode: Boolean, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = Color.Black.copy(alpha = 0.65f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(if (fromBarcode) Color(0xFF66BB6A) else MaterialTheme.colorScheme.primary)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                tracking,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1
+            )
+        }
+    }
+}
+
 @Composable
 private fun OverlayStatusRow(spinning: Boolean, isError: Boolean, label: String) {
     Row(
@@ -319,11 +353,29 @@ private fun RecordingContent(
         }
 
         Spacer(Modifier.height(8.dp))
-        CameraCapture(
-            modifier = Modifier.fillMaxWidth(),
-            previewHeight = 240.dp,
-            onPhotoCaptured = onPhotoCaptured
-        )
+        // 相机区域套 Box：识别出运单号后在预览顶部浮动显示，小屏不再被字段遮住。
+        Box(modifier = Modifier.fillMaxWidth()) {
+            CameraCapture(
+                modifier = Modifier.fillMaxWidth(),
+                previewHeight = 240.dp,
+                onPhotoCaptured = onPhotoCaptured
+            )
+            // 有已自动识别的运单号时（条码或 AI），浮在预览顶部
+            val displayTracking = state.confirm?.let { c ->
+                (c.barcodeTracking ?: c.trackingNumber.takeIf { c.trackingAutoFilled })
+                    ?.takeIf { it.isNotBlank() }
+            }
+            if (displayTracking != null) {
+                TrackingChipOverlay(
+                    tracking = displayTracking,
+                    fromBarcode = state.confirm?.trackingFromBarcode == true
+                        || state.confirm?.barcodeTracking != null,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 8.dp)
+                )
+            }
+        }
     }
 }
 
