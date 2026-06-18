@@ -19,6 +19,7 @@ sealed interface DockMessage {
     data class Text(val value: String) : DockMessage
     data object SelectWarehouseFirst : DockMessage
     data object PhotoProcessingFailed : DockMessage
+    data object TrackingNotRecognized : DockMessage
     data class BatchClosed(val number: String) : DockMessage
 }
 

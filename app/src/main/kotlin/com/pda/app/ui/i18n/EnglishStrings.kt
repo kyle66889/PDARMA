@@ -53,6 +53,7 @@ object EnglishStrings : AppStrings {
     }
     override val dock_selectWarehouseFirst = "Select a warehouse first"
     override val dock_photoProcessingFailed = "Photo processing failed — retake"
+    override val dock_trackingNotRecognized = "Couldn't read the tracking number — retake (hold steady, get closer) or enter it manually"
     override fun dock_batchClosed(number: String) = "$number closed"
 
     override val batch_empty = "No items in this batch"

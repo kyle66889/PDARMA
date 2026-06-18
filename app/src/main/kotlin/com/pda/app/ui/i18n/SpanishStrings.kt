@@ -53,6 +53,7 @@ object SpanishStrings : AppStrings {
     }
     override val dock_selectWarehouseFirst = "Seleccione un almacén primero"
     override val dock_photoProcessingFailed = "Error al procesar la foto — reintentar"
+    override val dock_trackingNotRecognized = "No se pudo leer el número de rastreo — repita la foto (firme, más cerca) o ingréselo manualmente"
     override fun dock_batchClosed(number: String) = "$number cerrado"
 
     override val batch_empty = "No hay artículos en este lote"

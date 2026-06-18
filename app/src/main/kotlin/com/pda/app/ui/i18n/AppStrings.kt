@@ -64,6 +64,7 @@ interface AppStrings {
     fun dock_closeBatchPrompt(itemCount: Int, needsReviewCount: Int): String
     val dock_selectWarehouseFirst: String
     val dock_photoProcessingFailed: String
+    val dock_trackingNotRecognized: String
     fun dock_batchClosed(number: String): String
 
     // ── Batch Detail ──────────────────────────────────────────────────────────

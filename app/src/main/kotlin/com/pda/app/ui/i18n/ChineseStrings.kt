@@ -53,6 +53,7 @@ object ChineseStrings : AppStrings {
     }
     override val dock_selectWarehouseFirst = "请先选择仓库"
     override val dock_photoProcessingFailed = "照片处理失败 — 请重拍"
+    override val dock_trackingNotRecognized = "未能识别运单号 — 请重拍（拿稳、靠近）或手动输入"
     override fun dock_batchClosed(number: String) = "$number 已关闭"
 
     override val batch_empty = "该批次暂无明细"

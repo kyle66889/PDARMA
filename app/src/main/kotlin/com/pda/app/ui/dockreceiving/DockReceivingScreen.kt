@@ -70,6 +70,7 @@ fun DockReceivingScreen(
                 is DockMessage.Text -> msg.value
                 DockMessage.SelectWarehouseFirst -> strings.dock_selectWarehouseFirst
                 DockMessage.PhotoProcessingFailed -> strings.dock_photoProcessingFailed
+                DockMessage.TrackingNotRecognized -> strings.dock_trackingNotRecognized
                 is DockMessage.BatchClosed -> strings.dock_batchClosed(msg.number)
             }
             snackbarHostState.showSnackbar(text)

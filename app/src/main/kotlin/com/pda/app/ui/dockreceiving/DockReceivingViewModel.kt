@@ -130,19 +130,22 @@ class DockReceivingViewModel @Inject constructor(
                 is NetworkResult.Loading -> {}
                 is NetworkResult.Success -> _uiState.update { state ->
                     val c = state.confirm ?: return@update state
-                    // 校验 AI 返回的运单号；识别失败/返回乱码（N/A、提示语等）时视为空，
+                    // 校验 AI 返回的运单号；识别失败/返回乱码（N/A、unreadable、提示语等）时视为空，
                     // 不写入字段，避免 Confirm 被错误启用。
                     val tracking = sanitizeTracking(result.data.trackingNumber)
                     val carrier = normalizeCarrier(result.data.carrier)
+                    val mergedTracking = if (tracking.isNotBlank()) tracking else c.trackingNumber
                     state.copy(
                         confirm = c.copy(
                             analyzing = false,
-                            trackingNumber = if (tracking.isNotBlank()) tracking else c.trackingNumber,
+                            trackingNumber = mergedTracking,
                             carrier = if (carrier.isNotBlank()) carrier else c.carrier,
                             trackingAutoFilled = tracking.isNotBlank(),
                             carrierAutoFilled = carrier.isNotBlank(),
                             rawJson = result.data.raw
-                        )
+                        ),
+                        // 识别完成但仍无运单号（AI 看不清/返回 unreadable，且用户也没手输）→ 明确提示重拍或手输。
+                        message = if (mergedTracking.isBlank()) DockMessage.TrackingNotRecognized else state.message
                     )
                 }
                 is NetworkResult.Error -> _uiState.update {
