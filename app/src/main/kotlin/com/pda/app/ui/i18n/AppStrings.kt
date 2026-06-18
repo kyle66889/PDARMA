@@ -14,6 +14,7 @@ interface AppStrings {
     val common_cancel: String
     val common_back: String          // contentDescription
     val common_loading: String
+    val common_sessionExpired: String
 
     /** Shared item count: Dock status bar, Batch Detail header, Receive Report totals. */
     fun itemCount(n: Int): String

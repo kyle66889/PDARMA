@@ -5,6 +5,7 @@ object ChineseStrings : AppStrings {
     override val common_cancel = "取消"
     override val common_back = "返回"
     override val common_loading = "加载中…"
+    override val common_sessionExpired = "登录已过期，请重新登录"
     override fun itemCount(n: Int) = "$n 件"
 
     override val login_subtitle = "仓库管理系统"

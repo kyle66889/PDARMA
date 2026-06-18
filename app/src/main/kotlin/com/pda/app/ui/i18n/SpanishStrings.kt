@@ -5,6 +5,7 @@ object SpanishStrings : AppStrings {
     override val common_cancel = "Cancelar"
     override val common_back = "Atrás"
     override val common_loading = "Cargando…"
+    override val common_sessionExpired = "Sesión expirada, inicie sesión de nuevo"
     override fun itemCount(n: Int) = "$n artículos"
 
     override val login_subtitle = "Sistema de Gestión de Almacén"

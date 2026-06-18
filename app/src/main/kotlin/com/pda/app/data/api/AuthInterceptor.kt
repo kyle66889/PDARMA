@@ -19,6 +19,11 @@ class AuthInterceptor @Inject constructor(
         } else {
             chain.request()
         }
-        return chain.proceed(request)
+        val response = chain.proceed(request)
+        // 已登录请求收到 401 → token 过期，触发会话过期事件（登录失败时 token 为 null，不会误触）。
+        if (token != null && response.code == 401) {
+            sessionManager.expire()
+        }
+        return response
     }
 }

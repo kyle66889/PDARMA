@@ -2,6 +2,7 @@ package com.pda.app
 
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -18,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.pda.app.data.prefs.UserPreferences
+import com.pda.app.data.session.SessionManager
 import com.pda.app.ui.batchdetail.BatchDetailScreen
 import com.pda.app.ui.dockreceiving.DockReceivingScreen
 import com.pda.app.ui.home.HomeScreen
@@ -34,6 +38,8 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     /** Read-only here: MainActivity only observes the language; ViewModels own the write path. */
     @Inject lateinit var userPreferences: UserPreferences
+    /** Observed to redirect to Login when the token expires (401). */
+    @Inject lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,6 +53,18 @@ class MainActivity : ComponentActivity() {
             ) {
             PdaTheme {
                 val navController = rememberNavController()
+                val context = LocalContext.current
+                val sessionExpiredMsg = LocalAppStrings.current.common_sessionExpired
+                // 会话过期（401）→ 提示并跳回登录页，清空返回栈。
+                LaunchedEffect(Unit) {
+                    sessionManager.sessionExpired.collect {
+                        Toast.makeText(context, sessionExpiredMsg, Toast.LENGTH_LONG).show()
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(
                         navController = navController,

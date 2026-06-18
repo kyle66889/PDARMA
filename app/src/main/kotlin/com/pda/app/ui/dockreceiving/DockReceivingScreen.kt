@@ -21,6 +21,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -205,31 +207,38 @@ private fun RecordingContent(
     onCarrierChange: (String) -> Unit,
     onConditionChange: (String) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // 状态条（件数 + 上传/识别/已保存）放在最上方。
-        RecordingStatusBar(state)
-        Spacer(Modifier.height(8.dp))
-
-        // Only show confirm fields for the current capture — no accumulated item list.
-        // Item count is already visible in the status bar above.
-        state.confirm?.let { confirm ->
+    val confirm = state.confirm
+    if (confirm == null) {
+        // 瞄准态：无确认字段，大预览贴底（用 weight 把相机顶到底部）。
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            RecordingStatusBar(state)
+            Spacer(Modifier.weight(1f))
+            CameraCapture(
+                modifier = Modifier.fillMaxWidth(),
+                previewHeight = 320.dp,
+                onPhotoCaptured = onPhotoCaptured
+            )
+        }
+    } else {
+        // 确认态：字段在上、可滚动，预览压小放最下，保证 Tracking # 始终可见可达。
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())
+        ) {
+            RecordingStatusBar(state)
+            Spacer(Modifier.height(8.dp))
             ConfirmFields(
                 confirm = confirm,
                 onTrackingChange = onTrackingChange,
                 onCarrierChange = onCarrierChange,
                 onConditionChange = onConditionChange
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
+            CameraCapture(
+                modifier = Modifier.fillMaxWidth(),
+                previewHeight = 170.dp,
+                onPhotoCaptured = onPhotoCaptured
+            )
         }
-
-        // Push camera to the bottom regardless of whether confirm fields are showing.
-        Spacer(Modifier.weight(1f))
-
-        CameraCapture(
-            modifier = Modifier.fillMaxWidth(),
-            previewHeight = if (state.confirm != null) 220.dp else 320.dp,
-            onPhotoCaptured = onPhotoCaptured
-        )
     }
 }
 

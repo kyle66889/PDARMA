@@ -3,8 +3,12 @@ package com.pda.app.data.session
 import android.util.Log
 import com.pda.app.data.api.model.UserInfoDto
 import com.pda.app.data.api.model.WarehouseDto
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,6 +29,13 @@ class SessionManager @Inject constructor() {
 
     private val _session = MutableStateFlow<Session?>(null)
     val session: StateFlow<Session?> = _session.asStateFlow()
+
+    /** 一次性事件：token 过期（401）。由 UI 监听后跳回登录页。 */
+    private val _sessionExpired = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val sessionExpired: SharedFlow<Unit> = _sessionExpired.asSharedFlow()
 
     /** 供 AuthInterceptor 读取的当前 token。 */
     val currentToken: String?
@@ -47,5 +58,16 @@ class SessionManager @Inject constructor() {
     fun clear() {
         Log.i(TAG, "clear: session cleared")
         _session.value = null
+    }
+
+    /**
+     * token 过期（收到 401）时调用：清空会话并发出一次性过期事件。
+     * 已无会话则直接返回，避免重复跳转。线程安全（供 OkHttp 拦截器线程调用）。
+     */
+    fun expire() {
+        if (_session.value == null) return
+        Log.w(TAG, "expire: session expired (401)")
+        _session.value = null
+        _sessionExpired.tryEmit(Unit)
     }
 }
